@@ -1,6 +1,6 @@
 local autoclose = {}
 
-local config = {
+autoclose.config = {
    keys = {
       ["("] = { escape = false, close = true, pair = "()" },
       ["["] = { escape = false, close = true, pair = "[]" },
@@ -33,6 +33,8 @@ local config = {
    },
    disabled = false,
 }
+
+local config = autoclose.config
 
 local function insert_get_pair()
    -- add "_" to let close function work in the first col
