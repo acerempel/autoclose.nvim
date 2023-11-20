@@ -111,16 +111,21 @@ end
 
 local function setup_filetype()
    local bufnr = vim.api.nvim_get_current_buf()
+   local current_filetype = vim.api.nvim_buf_get_option(bufnr, "filetype")
+
+   -- Are we globally disabled for this filetype?
+   if vim.tbl_contains(config.options.disabled_filetypes, current_filetype) then
+      return
+   end
+
    for key, info in pairs(config.keys) do
-      local current_filetype = vim.api.nvim_buf_get_option(bufnr, "filetype")
       local ft_disabled =
-         -- Are we globally disabled for this filetype?
-         vim.tbl_contains(config.options.disabled_filetypes, current_filetype)
          -- Is this pair explicitly enabled for this filetype? (No enabled
          -- list means enabled everywhere)
-         or (info.enabled_filetypes and not vim.tbl_contains(info.enabled_filetypes, current_filetype))
+         (info.enabled_filetypes and not vim.tbl_contains(info.enabled_filetypes, current_filetype))
          -- Is this pair disabled for this filetype?
          or vim.tbl_contains(info.disabled_filetypes or {}, current_filetype)
+
       if not ft_disabled then
          vim.keymap.set("i", key, function()
             return (key == " " and "<C-]>" or "") .. handler(key, info, "insert")
