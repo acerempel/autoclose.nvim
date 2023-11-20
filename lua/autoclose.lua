@@ -70,8 +70,12 @@ local function is_disabled(info)
 
    local current_filetype = vim.api.nvim_buf_get_option(0, "filetype")
    return
+      -- Are we globally disabled for this filetype?
       vim.tbl_contains(config.options.disabled_filetypes, current_filetype)
+      -- Is this pair explicitly enabled for this filetype? (No enabled
+      -- list means enabled everywhere)
       or (info.enabled_filetypes and not vim.tbl_contains(info.enabled_filetypes, current_filetype))
+      -- Is this pair disabled for this filetype?
       or vim.tbl_contains(info.disabled_filetypes or {}, current_filetype)
 end
 
