@@ -67,30 +67,21 @@ local function is_disabled(info)
    if config.disabled then
       return true
    end
-   local current_filetype = vim.api.nvim_buf_get_option(0, "filetype")
-   for _, filetype in pairs(config.options.disabled_filetypes) do
-      if filetype == current_filetype then
-         return true
-      end
-   end
 
-   if info["enabled_filetypes"] ~= nil then
-      for _, filetype in pairs(info.enabled_filetypes) do
-         if filetype == current_filetype then
-            return false
-         end
-      end
+   local current_filetype = vim.api.nvim_buf_get_option(0, "filetype")
+   if vim.tbl_contains(config.options.disabled_filetypes, current_filetype) then
       return true
    end
 
-   -- Let's check if the disabled_filetypes key is in the info table
-   if info["disabled_filetypes"] ~= nil then
-      for _, filetype in pairs(info.disabled_filetypes) do
-         if filetype == current_filetype then
-            return true
-         end
-      end
+   if vim.tbl_contains(info.enabled_filetypes or {}, current_filetype) then
+      return false
    end
+
+   -- Let's check if the disabled_filetypes key is in the info table
+   if vim.tbl_contains(info.disabled_filetypes or {}, current_filetype) then
+      return true
+   end
+
    return false
 end
 
