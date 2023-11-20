@@ -65,24 +65,8 @@ local function is_pair(pair)
    return false
 end
 
-local function is_disabled(info)
-   if config.disabled then
-      return true
-   end
-
-   local current_filetype = vim.api.nvim_buf_get_option(0, "filetype")
-   return
-      -- Are we globally disabled for this filetype?
-      vim.tbl_contains(config.options.disabled_filetypes, current_filetype)
-      -- Is this pair explicitly enabled for this filetype? (No enabled
-      -- list means enabled everywhere)
-      or (info.enabled_filetypes and not vim.tbl_contains(info.enabled_filetypes, current_filetype))
-      -- Is this pair disabled for this filetype?
-      or vim.tbl_contains(info.disabled_filetypes or {}, current_filetype)
-end
-
 local function handler(key, info, mode)
-   if is_disabled(info) then
+   if config.disabled then
       return key
    end
 
@@ -125,14 +109,38 @@ local function handler(key, info, mode)
    end
 end
 
+local function setup_filetype()
+   local bufnr = vim.api.nvim_get_current_buf()
+   for key, info in pairs(config.keys) do
+      local current_filetype = vim.api.nvim_buf_get_option(bufnr, "filetype")
+      local ft_disabled =
+         -- Are we globally disabled for this filetype?
+         vim.tbl_contains(config.options.disabled_filetypes, current_filetype)
+         -- Is this pair explicitly enabled for this filetype? (No enabled
+         -- list means enabled everywhere)
+         or (info.enabled_filetypes and not vim.tbl_contains(info.enabled_filetypes, current_filetype))
+         -- Is this pair disabled for this filetype?
+         or vim.tbl_contains(info.disabled_filetypes or {}, current_filetype)
+      if not ft_disabled then
+         vim.keymap.set("i", key, function()
+            return (key == " " and "<C-]>" or "") .. handler(key, info, "insert")
+         end, { noremap = true, expr = true, buffer = bufnr })
+      end
+   end
+end
+
 function autoclose.setup(user_config)
    config = vim.tbl_deep_extend('force', config, user_config or {})
 
-   for key, info in pairs(config.keys) do
-      vim.keymap.set("i", key, function()
-         return (key == " " and "<C-]>" or "") .. handler(key, info, "insert")
-      end, { noremap = true, expr = true })
+   local augroup = vim.api.nvim_create_augroup('autoclose', {})
+   vim.api.nvim_create_autocmd('FileType', {
+      callback = setup_filetype,
+      group = augroup,
+      pattern = "*",
+      desc = "Set up buffer-local mappings for autoclose",
+   })
 
+   for key, info in pairs(config.keys) do
       if
          not config.options.disable_command_mode
          and not info.disable_command_mode
